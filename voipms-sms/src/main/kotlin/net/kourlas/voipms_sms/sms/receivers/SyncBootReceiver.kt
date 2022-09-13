@@ -1,6 +1,6 @@
 /*
  * VoIP.ms SMS
- * Copyright (C) 2017-2020 Michael Kourlas
+ * Copyright (C) 2017-2021 Michael Kourlas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package net.kourlas.voipms_sms.sms.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import net.kourlas.voipms_sms.sms.services.SyncIntervalService
+import net.kourlas.voipms_sms.sms.workers.SyncWorker
 import net.kourlas.voipms_sms.utils.logException
 
 /**
@@ -31,13 +31,14 @@ class SyncBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         try {
             if (context == null || intent == null) {
-                return
+                throw Exception("No context or intent provided")
             }
             if (intent.action != "android.intent.action.BOOT_COMPLETED"
-                && intent.action != "android.intent.action.ACTION_LOCKED_BOOT_COMPLETED") {
-                return
+                && intent.action != "android.intent.action.ACTION_LOCKED_BOOT_COMPLETED"
+            ) {
+                throw Exception("Unrecognized action " + intent.action)
             }
-            SyncIntervalService.startService(context)
+            SyncWorker.performFullSynchronization(context, scheduleOnly = true)
         } catch (e: Exception) {
             logException(e)
         }

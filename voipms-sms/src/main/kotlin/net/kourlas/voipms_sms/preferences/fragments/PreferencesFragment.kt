@@ -1,6 +1,6 @@
 /*
  * VoIP.ms SMS
- * Copyright (C) 2017-2019 Michael Kourlas
+ * Copyright (C) 2017-2021 Michael Kourlas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,45 +34,55 @@ import net.kourlas.voipms_sms.utils.preferences
  * Fragment used to display the app's preferences.
  */
 class PreferencesFragment : PreferenceFragmentCompat() {
-    override fun onCreatePreferencesFix(savedInstanceState: Bundle?,
-                                        rootKey: String?) {
+    override fun onCreatePreferencesFix(
+        savedInstanceState: Bundle?,
+        rootKey: String?
+    ) {
         // Populate fragment with preferences defined in XML file
         addPreferencesFromResource(R.xml.preferences)
 
         context?.let {
             for (preference in preferenceScreen.preferences) {
                 if (preference.title == getString(
-                        R.string.preferences_notifications_category_name)) {
+                        R.string.preferences_notifications_category_name
+                    )
+                ) {
                     // Set the behaviour of the notifications preference; this
                     // is different depending on whether the system supports
                     // notification customization natively
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         val activity = activity ?: return
-                        Notifications.getInstance(activity.application)
+                        Notifications.getInstance(activity.applicationContext)
                             .createDefaultNotificationChannel()
 
                         val intent = Intent(
-                            Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
-                        intent.putExtra(Settings.EXTRA_APP_PACKAGE,
-                                        it.packageName)
+                            Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                        )
                         intent.putExtra(
-                            Settings.EXTRA_CHANNEL_ID,
-                            getString(R.string.notifications_channel_default))
+                            Settings.EXTRA_APP_PACKAGE,
+                            it.packageName
+                        )
                         preference.intent = intent
                     } else {
                         preference.intent = Intent(
                             context,
-                            NotificationsPreferencesActivity::class.java)
+                            NotificationsPreferencesActivity::class.java
+                        )
                     }
                 } else if (preference.title == getString(
-                        R.string.preferences_account_category_name)) {
+                        R.string.preferences_account_category_name
+                    )
+                ) {
                     // Set the behaviour of the account preference
                     if (accountConfigured(it)) {
                         preference.intent = Intent(
-                            context, AccountPreferencesActivity::class.java)
+                            context, AccountPreferencesActivity::class.java
+                        )
                     } else {
-                        preference.intent = Intent(context,
-                                                   SignInActivity::class.java)
+                        preference.intent = Intent(
+                            context,
+                            SignInActivity::class.java
+                        )
                     }
                 }
             }

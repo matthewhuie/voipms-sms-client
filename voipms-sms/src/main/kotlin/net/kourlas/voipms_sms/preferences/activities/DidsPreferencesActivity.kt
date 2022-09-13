@@ -28,12 +28,13 @@ import android.text.method.LinkMovementMethod
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import kotlinx.coroutines.runBlocking
 import net.kourlas.voipms_sms.R
+import net.kourlas.voipms_sms.database.Database
 import net.kourlas.voipms_sms.network.NetworkManager
 import net.kourlas.voipms_sms.preferences.accountConfigured
 import net.kourlas.voipms_sms.preferences.fragments.DidsPreferencesFragment
-import net.kourlas.voipms_sms.sms.Database
-import net.kourlas.voipms_sms.sms.services.RetrieveDidsService
+import net.kourlas.voipms_sms.sms.workers.RetrieveDidsWorker
 import net.kourlas.voipms_sms.utils.safeUnregisterReceiver
 import net.kourlas.voipms_sms.utils.showSnackbar
 
@@ -55,15 +56,20 @@ class DidsPreferencesActivity : AppCompatActivity() {
                 // Show error if one occurred
                 val retrievedDids = intent?.getStringArrayListExtra(
                     getString(
-                        R.string.retrieve_dids_complete_dids))
+                        R.string.retrieve_dids_complete_dids
+                    )
+                )
                 val error = intent?.getStringExtra(
                     getString(
-                        R.string.retrieve_dids_complete_error))
+                        R.string.retrieve_dids_complete_error
+                    )
+                )
                 if (error != null) {
                     showSnackbar(
                         this@DidsPreferencesActivity,
                         R.id.coordinator_layout,
-                        error)
+                        error
+                    )
                 }
 
                 loadPreferences(retrievedDids)
@@ -88,11 +94,13 @@ class DidsPreferencesActivity : AppCompatActivity() {
         val textView = findViewById<TextView>(R.id.info_text_view)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             textView.text = Html.fromHtml(
-                getString(R.string.preferences_dids_info), 0)
+                getString(R.string.preferences_dids_info), 0
+            )
         } else {
             @Suppress("DEPRECATION")
             textView.text = Html.fromHtml(
-                getString(R.string.preferences_dids_info))
+                getString(R.string.preferences_dids_info)
+            )
         }
         textView.movementMethod = LinkMovementMethod.getInstance()
 
@@ -105,7 +113,8 @@ class DidsPreferencesActivity : AppCompatActivity() {
         // Register dynamic receivers for this fragment
         registerReceiver(
             didRetrievalCompleteReceiver,
-            IntentFilter(getString(R.string.retrieve_dids_complete_action)))
+            IntentFilter(getString(R.string.retrieve_dids_complete_action))
+        )
     }
 
     override fun onPause() {
@@ -122,7 +131,7 @@ class DidsPreferencesActivity : AppCompatActivity() {
     }
 
     /**
-     * Starts the [RetrieveDidsService], which will retrieve the DIDs to
+     * Starts the [RetrieveDidsWorker], which will retrieve the DIDs to
      * show in this activity.
      */
     private fun retrieveDids() {
@@ -133,14 +142,17 @@ class DidsPreferencesActivity : AppCompatActivity() {
             return
         }
         if (!NetworkManager.getInstance().isNetworkConnectionAvailable(this)) {
-            showSnackbar(this, R.id.coordinator_layout, getString(
-                R.string.preferences_dids_error_network))
+            showSnackbar(
+                this, R.id.coordinator_layout, getString(
+                    R.string.preferences_dids_error_network
+                )
+            )
             loadPreferences(null)
             return
         }
 
         // Pass control to RetrieveDidsService
-        RetrieveDidsService.startService(this)
+        RetrieveDidsWorker.retrieveDids(this)
     }
 
     /**
@@ -154,28 +166,38 @@ class DidsPreferencesActivity : AppCompatActivity() {
         // Hide progress bar
         val preloadLayout = findViewById<View>(R.id.preferences_preload_layout)
         val postloadLayout = findViewById<View>(
-            R.id.preferences_postload_layout)
+            R.id.preferences_postload_layout
+        )
         preloadLayout.visibility = View.GONE
         postloadLayout.visibility = View.VISIBLE
 
         // Load preferences fragment
         val bundle = Bundle()
-        bundle.putStringArrayList(getString(
-            R.string
-                .preferences_dids_fragment_retrieved_dids_key),
-                                  retrievedDids)
-        val databaseDids = Database.getInstance(applicationContext)
-            .getDids()
-        bundle.putStringArrayList(getString(
-            R.string
-                .preferences_dids_fragment_database_dids_key),
-                                  ArrayList(databaseDids))
+        bundle.putStringArrayList(
+            getString(
+                R.string
+                    .preferences_dids_fragment_retrieved_dids_key
+            ),
+            retrievedDids
+        )
+        val databaseDids = runBlocking {
+            Database.getInstance(applicationContext)
+                .getDids()
+        }
+        bundle.putStringArrayList(
+            getString(
+                R.string
+                    .preferences_dids_fragment_database_dids_key
+            ),
+            ArrayList(databaseDids)
+        )
 
         if (this.savedInstanceState == null) {
             fragment = DidsPreferencesFragment()
             fragment.arguments = bundle
             supportFragmentManager.beginTransaction().replace(
-                R.id.preferences_fragment_layout, fragment).commit()
+                R.id.preferences_fragment_layout, fragment
+            ).commit()
         }
     }
 }

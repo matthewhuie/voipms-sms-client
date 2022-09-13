@@ -1,3 +1,64 @@
+## 0.6.23 ##
+
+* Bug fixes
+
+## 0.6.22 ##
+
+* Bug fixes
+* Rename in-app purchase mechanism to "buy me a coffee"
+
+## 0.6.21 ##
+
+* Restored donation in-app purchase mechanism
+
+## 0.6.20 ##
+
+* Bug fixes
+
+## 0.6.19 ##
+
+* Bug fixes and performance improvements
+
+## 0.6.18 ##
+
+* Bug fixes
+
+## 0.6.17 ##
+
+* Bug fixes
+
+## 0.6.16 ##
+
+* Bug fixes
+
+## 0.6.15 ##
+
+* Bug fixes
+
+## 0.6.14 ##
+
+* Bug fixes
+* Support for notification bubbles in Android 11
+* Support for direct share
+* Improvements to notification direct reply
+* Allow swiping to archive or delete items
+* Use undo snackbars instead of dialogs where possible
+* Restore Android Auto support
+* Switch cloud functions provider to IBM
+
+## 0.6.13 ##
+
+* Bug fixes
+* Removed Android Auto support, due to issues receiving approval from Google
+
+## 0.6.12 ##
+
+* Bug fixes
+
+## 0.6.11 ##
+
+* Bug fixes
+
 ## 0.6.10 ##
 
 * Bug fixes and performance improvements

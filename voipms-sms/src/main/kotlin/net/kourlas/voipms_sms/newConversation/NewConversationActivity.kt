@@ -1,6 +1,6 @@
 /*
  * VoIP.ms SMS
- * Copyright (C) 2015-2020 Michael Kourlas
+ * Copyright (C) 2015-2021 Michael Kourlas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 package net.kourlas.voipms_sms.newConversation
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -31,8 +32,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import net.kourlas.voipms_sms.BuildConfig
 import net.kourlas.voipms_sms.R
 import net.kourlas.voipms_sms.conversation.ConversationActivity
 import net.kourlas.voipms_sms.preferences.accountConfigured
@@ -71,6 +74,11 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
         setupRecyclerView()
 
         adapter.refresh()
+
+        ShortcutManagerCompat.reportShortcutUsed(
+            applicationContext,
+            "new_conversation"
+        )
     }
 
     /**
@@ -81,7 +89,8 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
         val action = intent.action
         val type = intent.type
         if (Intent.ACTION_SEND == action && type != null
-            && type == "text/plain") {
+            && type == "text/plain"
+        ) {
             this.messageText = intent.getStringExtra(Intent.EXTRA_TEXT)
         }
     }
@@ -102,7 +111,8 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
             // Configure the search box to trigger adapter filtering when the
             // text changes
             val searchView = it.customView.findViewById<SearchView>(
-                R.id.search_view)
+                R.id.search_view
+            )
             searchView.inputType = InputType.TYPE_TEXT_VARIATION_PERSON_NAME
             searchView
                 .setOnQueryTextListener(
@@ -111,9 +121,11 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
                             false
 
                         override fun onQueryTextChange(
-                            newText: String): Boolean {
+                            newText: String
+                        ): Boolean {
                             val phoneNumber = newText.replace(
-                                "[^0-9]".toRegex(), "")
+                                "[^0-9]".toRegex(), ""
+                            )
                             adapter.typedInPhoneNumber = phoneNumber
                             adapter.refresh(newText)
                             return true
@@ -123,30 +135,42 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
 
             // Hide search icon
             val searchMagIcon = searchView.findViewById<ImageView>(
-                R.id.search_mag_icon)
+                R.id.search_mag_icon
+            )
             searchMagIcon.layoutParams = LinearLayout.LayoutParams(0, 0)
 
             // Set cursor color and hint text
             val searchAutoComplete = searchView.findViewById<
                 SearchView.SearchAutoComplete>(
-                androidx.appcompat.R.id.search_src_text)
+                androidx.appcompat.R.id.search_src_text
+            )
             searchAutoComplete.hint = getString(
-                R.string.new_conversation_text_hint)
-            searchAutoComplete.setTextColor(ContextCompat.getColor(
-                applicationContext, android.R.color.white))
-            searchAutoComplete.setHintTextColor(ContextCompat.getColor(
-                applicationContext, R.color.search_hint))
+                R.string.new_conversation_text_hint
+            )
+            searchAutoComplete.setTextColor(
+                ContextCompat.getColor(
+                    applicationContext, android.R.color.white
+                )
+            )
+            searchAutoComplete.setHintTextColor(
+                ContextCompat.getColor(
+                    applicationContext, R.color.search_hint
+                )
+            )
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 try {
+                    @SuppressLint("DiscouragedPrivateApi")
                     val field = TextView::class.java.getDeclaredField(
-                        "mCursorDrawableRes")
+                        "mCursorDrawableRes"
+                    )
                     field.isAccessible = true
                     field.set(searchAutoComplete, R.drawable.search_cursor)
                 } catch (_: java.lang.Exception) {
                 }
             } else {
                 searchAutoComplete.setTextCursorDrawable(
-                    R.drawable.search_cursor)
+                    R.drawable.search_cursor
+                )
             }
         }
     }
@@ -182,9 +206,12 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
     private fun performAccountDidCheck() {
         // If there are no DIDs available or the user has not configured an
         // account, then force the user to configure an account or DIDs
-        if (!accountConfigured(applicationContext)) {
+        if (!accountConfigured(applicationContext) && !BuildConfig.IS_DEMO) {
             startActivity(Intent(this, SignInActivity::class.java))
-        } else if (!didsConfigured(applicationContext)) {
+        } else if (!didsConfigured(
+                applicationContext
+            ) && !BuildConfig.IS_DEMO
+        ) {
             startActivity(Intent(this, DidsPreferencesActivity::class.java))
         }
     }
@@ -211,7 +238,8 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
     private fun onDialpadButtonClick(item: MenuItem): Boolean {
         supportActionBar?.let {
             val searchView = it.customView.findViewById<SearchView>(
-                R.id.search_view)
+                R.id.search_view
+            )
             searchView.inputType = InputType.TYPE_CLASS_PHONE
             item.isVisible = false
             menu.findItem(R.id.keyboard_button)?.isVisible = true
@@ -225,7 +253,8 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
     private fun onKeyboardButtonClick(item: MenuItem): Boolean {
         supportActionBar?.let {
             val searchView = it.customView.findViewById<SearchView>(
-                R.id.search_view)
+                R.id.search_view
+            )
             searchView.inputType = InputType.TYPE_TEXT_VARIATION_PERSON_NAME
             item.isVisible = false
             menu.findItem(R.id.dialpad_button)?.isVisible = true
@@ -248,23 +277,29 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
                     .phoneNumbersAndTypes
                     .map { phoneNumberAndType ->
                         "${phoneNumberAndType.phoneNumber} " +
-                        "(${phoneNumberAndType.type})"
+                            "(${phoneNumberAndType.type})"
                     }
 
                 var selectedIndex = 0
                 AlertDialog.Builder(this).apply {
                     setTitle("Select phone number")
-                    setSingleChoiceItems(phoneNumbers.toTypedArray(),
-                                         selectedIndex) { _, which ->
+                    setSingleChoiceItems(
+                        phoneNumbers.toTypedArray(),
+                        selectedIndex
+                    ) { _, which ->
                         selectedIndex = which
                     }
-                    setPositiveButton(context.getString(R.string.ok)
-                                     ) { _, _ ->
+                    setPositiveButton(
+                        context.getString(R.string.ok)
+                    ) { _, _ ->
                         startConversationActivity(
-                            phoneNumbers[selectedIndex])
+                            phoneNumbers[selectedIndex]
+                        )
                     }
-                    setNegativeButton(context.getString(R.string.cancel),
-                                      null)
+                    setNegativeButton(
+                        context.getString(R.string.cancel),
+                        null
+                    )
                     setCancelable(false)
                     show()
                 }
@@ -272,7 +307,8 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
                 startConversationActivity(contactItem.primaryPhoneNumber)
             }
         } else if (contactItem is
-                NewConversationRecyclerViewAdapter.TypedInContactItem) {
+                NewConversationRecyclerViewAdapter.TypedInContactItem
+        ) {
             startConversationActivity(contactItem.primaryPhoneNumber)
         } else {
             throw Exception("Unrecognized contact item type")
@@ -284,13 +320,17 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
      */
     private fun startConversationActivity(contact: String) {
         val intent = Intent(this, ConversationActivity::class.java)
-        intent.putExtra(this.getString(R.string.conversation_contact),
-                        getDigitsOfString(contact))
+        intent.putExtra(
+            this.getString(R.string.conversation_contact),
+            getDigitsOfString(contact)
+        )
         if (messageText != null) {
             intent.putExtra(
                 this.getString(
-                    R.string.conversation_extra_message_text),
-                messageText)
+                    R.string.conversation_extra_message_text
+                ),
+                messageText
+            )
         }
         intent.putExtra(this.getString(R.string.conversation_extra_focus), true)
 
@@ -306,25 +346,32 @@ class NewConversationActivity : AppCompatActivity(), View.OnClickListener {
                     setTitle("Select DID")
                     setSingleChoiceItems(
                         dids.map(::getFormattedPhoneNumber).toTypedArray(),
-                        selectedIndex) { _, which ->
+                        selectedIndex
+                    ) { _, which ->
                         selectedIndex = which
                     }
                     setPositiveButton(getString(R.string.ok)) { _, _ ->
                         intent.putExtra(
                             getString(
-                                R.string.conversation_did),
-                            dids[selectedIndex])
+                                R.string.conversation_did
+                            ),
+                            dids[selectedIndex]
+                        )
                         startActivity(intent)
                     }
-                    setNegativeButton(getString(R.string.cancel),
-                                      null)
+                    setNegativeButton(
+                        getString(R.string.cancel),
+                        null
+                    )
                     setCancelable(false)
                     show()
                 }
             }
             else -> {
-                intent.putExtra(getString(R.string.conversation_did),
-                                dids.first())
+                intent.putExtra(
+                    getString(R.string.conversation_did),
+                    dids.first()
+                )
                 this.startActivity(intent)
             }
         }

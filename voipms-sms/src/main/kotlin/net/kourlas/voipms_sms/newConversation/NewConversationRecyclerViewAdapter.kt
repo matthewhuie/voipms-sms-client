@@ -1,6 +1,6 @@
 /*
  * VoIP.ms SMS
- * Copyright (C) 2017-2020 Michael Kourlas
+ * Copyright (C) 2017-2021 Michael Kourlas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,8 @@ import java.util.*
  */
 class NewConversationRecyclerViewAdapter(
     private val activity: NewConversationActivity,
-    private val recyclerView: RecyclerView) :
+    private val recyclerView: RecyclerView
+) :
     RecyclerView.Adapter<
         NewConversationRecyclerViewAdapter.ContactViewHolder>(),
     Filterable,
@@ -68,11 +69,18 @@ class NewConversationRecyclerViewAdapter(
         loadAllContactItems()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup,
-                                    viewType: Int): ContactViewHolder = // There is only one item view type
-        ContactViewHolder(LayoutInflater.from(parent.context)
-                              .inflate(R.layout.new_conversation_item,
-                                       parent, false))
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): ContactViewHolder =
+        // There is only one item view type
+        ContactViewHolder(
+            LayoutInflater.from(parent.context)
+                .inflate(
+                    R.layout.new_conversation_item,
+                    parent, false
+                )
+        )
 
     override fun onBindViewHolder(holder: ContactViewHolder, position: Int) {
         updateViewHolderIndex(holder, position)
@@ -87,8 +95,10 @@ class NewConversationRecyclerViewAdapter(
      * @param holder The message view holder to use.
      * @param position The position of the view in the adapter.
      */
-    private fun updateViewHolderIndex(holder: ContactViewHolder,
-                                      position: Int) {
+    private fun updateViewHolderIndex(
+        holder: ContactViewHolder,
+        position: Int
+    ) {
         val contactItem = contactItems[position]
 
         // Add indexes to entries where appropriate
@@ -104,7 +114,9 @@ class NewConversationRecyclerViewAdapter(
                 || previousItem is TypedInContactItem
                 || (previousItem is ContactItem
                     && currentInitial != getContactInitial(
-                    previousItem.getSortingName()))) {
+                    previousItem.getSortingName()
+                ))
+            ) {
                 holder.letterText.text = currentInitial
             } else {
                 holder.letterText.text = ""
@@ -121,44 +133,27 @@ class NewConversationRecyclerViewAdapter(
      * @param holder The message view holder to use.
      * @param position The position of the view in the adapter.
      */
-    private fun updateViewHolderContactBadge(holder: ContactViewHolder,
-                                             position: Int) {
+    private fun updateViewHolderContactBadge(
+        holder: ContactViewHolder,
+        position: Int
+    ) {
         val contactItem = contactItems[position]
 
         // Set contact photo
         holder.contactBadge.assignContactFromPhone(
-            contactItem.primaryPhoneNumber, true)
+            contactItem.primaryPhoneNumber, true
+        )
         if (contactItem is TypedInContactItem) {
             // Show dialpad for typed in phone number
             holder.contactBadge.scaleType = ImageView.ScaleType.CENTER
             holder.contactBadge.setBackgroundResource(R.color.typed_in_contact)
             holder.contactBadge.setImageResource(
-                R.drawable.ic_dialpad_toolbar_24dp)
-            holder.contactBadgeLetterText.text = ""
+                R.drawable.ic_dialpad_toolbar_24dp
+            )
         } else if (contactItem is ContactItem) {
             holder.contactBadge.scaleType = ImageView.ScaleType.CENTER_CROP
-            if (contactItem.bitmap != null) {
-                // Show bitmap for contact with bitmap
-                holder.contactBadge.setBackgroundResource(0)
-                holder.contactBadge.setImageBitmap(contactItem.bitmap)
-                holder.contactBadgeLetterText.text = ""
-            } else {
-                // Show material design color and first letter for contact
-                // without bitmap
-                holder.contactBadge.setBackgroundColor(getMaterialDesignColour(
-                    contactItem.primaryPhoneNumber))
-                getContactInitial(contactItem.getSortingName()).let {
-                    if (it[0].isLetter()) {
-                        holder.contactBadgeLetterText.text = it
-                        holder.contactBadge.setImageResource(
-                            android.R.color.transparent)
-                    } else {
-                        holder.contactBadgeLetterText.text = ""
-                        holder.contactBadge.setImageResource(
-                            R.drawable.ic_account_circle_inverted_toolbar_24dp)
-                    }
-                }
-            }
+            holder.contactBadge.setBackgroundResource(0)
+            holder.contactBadge.setImageBitmap(contactItem.bitmap)
         }
     }
 
@@ -169,26 +164,31 @@ class NewConversationRecyclerViewAdapter(
      * @param holder The message view holder to use.
      * @param position The position of the view in the adapter.
      */
-    private fun updateViewHolderContact(holder: ContactViewHolder,
-                                        position: Int) {
+    private fun updateViewHolderContact(
+        holder: ContactViewHolder,
+        position: Int
+    ) {
         val contactItem = contactItems[position]
 
         // Set contact name
         if (contactItem is TypedInContactItem) {
             holder.contactText.text = activity.getString(
-                R.string.new_conversation_manual_entry)
+                R.string.new_conversation_manual_entry
+            )
         } else if (contactItem is ContactItem) {
             holder.contactText.text = contactItem.name
         }
 
         // Set phone number text
         if (contactItem is ContactItem
-            && !contactItem.showSeparateNameAndPhoneNumber()) {
+            && !contactItem.showSeparateNameAndPhoneNumber()
+        ) {
             holder.phoneNumberText.visibility = View.GONE
         } else {
             var text = contactItem.primaryPhoneNumber
             if (contactItem is ContactItem
-                && contactItem.phoneNumbersAndTypes.size > 1) {
+                && contactItem.phoneNumbersAndTypes.size > 1
+            ) {
                 // Add (+X) if there are secondary phone numbers
                 text += " (+${contactItem.phoneNumbersAndTypes.size - 1})"
 
@@ -205,7 +205,8 @@ class NewConversationRecyclerViewAdapter(
                     contactItem.phoneNumbersAndTypes[0].type
             } else {
                 holder.phoneNumberTypeText.text = activity.getString(
-                    R.string.new_conversation_multiple)
+                    R.string.new_conversation_multiple
+                )
             }
             holder.phoneNumberTypeText.visibility = View.VISIBLE
         } else {
@@ -240,24 +241,33 @@ class NewConversationRecyclerViewAdapter(
             // If there is a typed in phone number, always include it in
             // the filtered list
             if (typedInPhoneNumber != "") {
-                filteredContactItems.add(TypedInContactItem(
-                    typedInPhoneNumber))
+                filteredContactItems.add(
+                    TypedInContactItem(
+                        typedInPhoneNumber
+                    )
+                )
             }
 
             // Perform actual filtering
             val currConstraint = constraint.toString().trim { it <= ' ' }
             for (contactItem in allContactItems) {
                 val match =
-                    contactItem.name.toLowerCase(Locale.getDefault()).contains(
-                        currConstraint.toLowerCase(Locale.getDefault()))
-                    || contactItem.primaryPhoneNumber
-                        .toLowerCase(Locale.getDefault())
-                        .contains(currConstraint.toLowerCase(
-                            Locale.getDefault()))
-                    || (getDigitsOfString(currConstraint) != ""
+                    contactItem.name.lowercase(Locale.getDefault()).contains(
+                        currConstraint.lowercase(Locale.getDefault())
+                    )
+                        || contactItem.primaryPhoneNumber
+                        .lowercase(Locale.getDefault())
+                        .contains(
+                            currConstraint.lowercase(
+                                Locale.getDefault()
+                            )
+                        )
+                        || (getDigitsOfString(currConstraint) != ""
                         && getDigitsOfString(
-                        contactItem.primaryPhoneNumber).contains(
-                        getDigitsOfString(currConstraint)))
+                        contactItem.primaryPhoneNumber
+                    ).contains(
+                        getDigitsOfString(currConstraint)
+                    ))
                 if (match) {
                     filteredContactItems.add(contactItem)
                 }
@@ -267,7 +277,8 @@ class NewConversationRecyclerViewAdapter(
         }
 
         override fun performFiltering(
-            constraint: CharSequence): FilterResults = try {
+            constraint: CharSequence
+        ): FilterResults = try {
             val filteredContactItems = doFiltering(constraint)
 
             // Return the filtered results
@@ -280,12 +291,17 @@ class NewConversationRecyclerViewAdapter(
             FilterResults()
         }
 
-        override fun publishResults(constraint: CharSequence,
-                                    results: FilterResults?) {
+        override fun publishResults(
+            constraint: CharSequence,
+            results: FilterResults?
+        ) {
             if (results?.values == null) {
-                showSnackbar(activity, R.id.coordinator_layout,
-                             activity.getString(
-                                 R.string.new_conversation_error_refresh))
+                showSnackbar(
+                    activity, R.id.coordinator_layout,
+                    activity.getString(
+                        R.string.new_conversation_error_refresh
+                    )
+                )
                 return
             }
 
@@ -308,7 +324,8 @@ class NewConversationRecyclerViewAdapter(
             var oldIdx = 0
             val contactItemIndexes = mutableListOf<Int>()
             while (oldIdx < oldContactItems.size
-                   || newIdx < newContactItems.size) {
+                || newIdx < newContactItems.size
+            ) {
                 // Positive value indicates addition, negative value
                 // indicates deletion, zero indicates changed, moved, or
                 // nothing
@@ -318,7 +335,8 @@ class NewConversationRecyclerViewAdapter(
                 } else if (oldIdx >= oldContactItems.size) {
                     comparison = 1
                 } else if (oldContactItems[oldIdx] is TypedInContactItem
-                           && newContactItems[newIdx] is TypedInContactItem) {
+                    && newContactItems[newIdx] is TypedInContactItem
+                ) {
                     comparison = 0
                 } else if (oldContactItems[oldIdx] is TypedInContactItem) {
                     comparison = -1
@@ -328,7 +346,8 @@ class NewConversationRecyclerViewAdapter(
                     val oldContact = oldContactItems[oldIdx] as ContactItem
                     val newContact = newContactItems[newIdx] as ContactItem
                     comparison = oldContact.name.compareTo(
-                        newContact.name, ignoreCase = true)
+                        newContact.name, ignoreCase = true
+                    )
                 }
 
                 when {
@@ -375,15 +394,18 @@ class NewConversationRecyclerViewAdapter(
 
             // Show message if filter returned no contacts
             val emptyTextView = activity.findViewById<TextView>(
-                R.id.empty_text)
+                R.id.empty_text
+            )
             if (contactItems.isEmpty()) {
                 if (currConstraint == "") {
                     emptyTextView.text = activity.getString(
-                        R.string.new_conversation_no_contacts)
+                        R.string.new_conversation_no_contacts
+                    )
                 } else {
                     emptyTextView.text = activity.getString(
                         R.string.new_conversation_no_results,
-                        constraint.toString())
+                        constraint.toString()
+                    )
                 }
             } else {
                 emptyTextView.text = ""
@@ -410,7 +432,7 @@ class NewConversationRecyclerViewAdapter(
     private fun loadAllContactItems() {
         @Suppress("ConstantConditionIf")
         if (BuildConfig.IS_DEMO) {
-            allContactItems.addAll(getNewConversationContacts())
+            allContactItems.addAll(getNewConversationContacts(activity))
             return
         }
 
@@ -419,36 +441,95 @@ class NewConversationRecyclerViewAdapter(
                 ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                 null, null, null,
                 ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
-                + " COLLATE NOCASE ASC")
+                    + " COLLATE NOCASE ASC"
+            )
             if (cursor != null) {
                 while (cursor.moveToNext()) {
-                    if (cursor.getString(cursor.getColumnIndex(
-                            ContactsContract.Contacts.HAS_PHONE_NUMBER)) == "1") {
-                        val id = cursor.getLong(
-                            cursor.getColumnIndex(
-                                ContactsContract.CommonDataKinds.Phone
-                                    .CONTACT_ID))
+                    var index = cursor.getColumnIndex(
+                        ContactsContract.Contacts.HAS_PHONE_NUMBER
+                    )
+                    if (index < 0) {
+                        continue
+                    }
+                    if (cursor.getString(index) == "1") {
+                        index = cursor.getColumnIndex(
+                            ContactsContract.CommonDataKinds.Phone
+                                .CONTACT_ID
+                        )
+                        if (index < 0) {
+                            continue
+                        }
+                        val id = cursor.getLong(index)
+
+                        index = cursor.getColumnIndex(
+                            ContactsContract.CommonDataKinds
+                                .Phone.NUMBER
+                        )
+                        if (index < 0) {
+                            continue
+                        }
                         val phoneNumber = cursor.getString(
-                            cursor.getColumnIndex(
-                                ContactsContract.CommonDataKinds
-                                    .Phone.NUMBER)) ?: continue
+                            index
+                        ) ?: continue
+
+                        index = cursor.getColumnIndex(
+                            ContactsContract.Contacts.DISPLAY_NAME
+                        )
+                        if (index < 0) {
+                            continue
+                        }
                         val contact = cursor.getString(
-                            cursor.getColumnIndex(
-                                ContactsContract.Contacts.DISPLAY_NAME))
-                                      ?: getFormattedPhoneNumber(phoneNumber)
+                            index
+                        )
+                            ?: getFormattedPhoneNumber(phoneNumber)
+
+                        index = cursor.getColumnIndex(
+                            ContactsContract.CommonDataKinds
+                                .Phone.TYPE
+                        )
+                        if (index < 0) {
+                            continue
+                        }
                         val phoneNumberType = getPhoneNumberType(
                             cursor.getInt(
-                                cursor.getColumnIndex(
-                                    ContactsContract.CommonDataKinds
-                                        .Phone.TYPE)))
-                        val photoUri = cursor.getString(
-                            cursor.getColumnIndex(
-                                ContactsContract.Contacts.PHOTO_URI))
-                        val bitmap = if (photoUri != null) {
-                            getBitmapFromUri(activity, Uri.parse(photoUri))
-                        } else {
-                            null
+                                index
+                            )
+                        )
+
+                        index = cursor.getColumnIndex(
+                            ContactsContract.Contacts.PHOTO_URI
+                        )
+                        if (index < 0) {
+                            continue
                         }
+                        val photoUri = cursor.getString(
+                            index
+                        )
+
+                        index = cursor.getColumnIndex(
+                            ContactsContract.Contacts.DISPLAY_NAME
+                        )
+                        if (index < 0) {
+                            continue
+                        }
+                        val bitmap = photoUri?.let {
+                            getBitmapFromUri(
+                                activity,
+                                Uri.parse(it),
+                                activity.resources.getDimensionPixelSize(
+                                    R.dimen.contact_badge
+                                )
+                            )
+                        } ?: getGenericContactPhotoBitmap(
+                            activity,
+                            cursor.getString(
+                                index
+                            ),
+                            phoneNumber,
+                            activity.resources.getDimensionPixelSize(
+                                R.dimen.contact_badge
+                            )
+                        )
 
                         val previousContactItem =
                             if (allContactItems.size > 0) {
@@ -466,16 +547,23 @@ class NewConversationRecyclerViewAdapter(
                             if (phoneNumber !in phoneNumbers) {
                                 previousContactItem.phoneNumbersAndTypes.add(
                                     PhoneNumberAndType(
-                                        phoneNumber, phoneNumberType))
+                                        phoneNumber, phoneNumberType
+                                    )
+                                )
                             }
                         } else {
-                            allContactItems.add(ContactItem(
-                                id,
-                                contact,
-                                mutableListOf(
-                                    PhoneNumberAndType(
-                                        phoneNumber, phoneNumberType)),
-                                bitmap))
+                            allContactItems.add(
+                                ContactItem(
+                                    id,
+                                    contact,
+                                    mutableListOf(
+                                        PhoneNumberAndType(
+                                            phoneNumber, phoneNumberType
+                                        )
+                                    ),
+                                    bitmap
+                                )
+                            )
                         }
                     }
                 }
@@ -498,13 +586,12 @@ class NewConversationRecyclerViewAdapter(
      */
     inner class ContactViewHolder internal constructor(
         // All configurable views on a contact item
-        itemView: View) : RecyclerView.ViewHolder(itemView) {
+        itemView: View
+    ) : RecyclerView.ViewHolder(itemView) {
         internal val letterText: TextView =
             itemView.findViewById(R.id.letter)
         internal val contactBadge: QuickContactBadge =
             itemView.findViewById(R.id.photo)
-        internal val contactBadgeLetterText: TextView =
-            itemView.findViewById(R.id.photo_letter)
         internal val contactText: TextView =
             itemView.findViewById(R.id.contact)
         internal val phoneNumberText: TextView =
@@ -549,17 +636,19 @@ class NewConversationRecyclerViewAdapter(
      *                             corresponding types.
      * @param bitmap The photo of the contact.
      */
-    class ContactItem(val id: Long,
-                      val name: String,
-                      val phoneNumbersAndTypes: MutableList<PhoneNumberAndType>,
-                      val bitmap: Bitmap?) :
+    class ContactItem(
+        val id: Long,
+        val name: String,
+        val phoneNumbersAndTypes: MutableList<PhoneNumberAndType>,
+        val bitmap: Bitmap
+    ) :
         BaseContactItem(phoneNumbersAndTypes[0].phoneNumber) {
         /**
          * Returns true if the name and phone number are different.
          */
         fun showSeparateNameAndPhoneNumber(): Boolean {
             return name != primaryPhoneNumber
-                   && name != getFormattedPhoneNumber(primaryPhoneNumber)
+                && name != getFormattedPhoneNumber(primaryPhoneNumber)
         }
 
         /**

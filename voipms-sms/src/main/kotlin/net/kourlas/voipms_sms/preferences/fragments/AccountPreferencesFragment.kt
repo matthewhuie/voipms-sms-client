@@ -39,21 +39,26 @@ class AccountPreferencesFragment : PreferenceFragmentCompat(),
         updateSummariesAndHandlers()
     }
 
-    override fun onCreatePreferencesFix(savedInstanceState: Bundle?,
-                                        rootKey: String?) {
+    override fun onCreatePreferencesFix(
+        savedInstanceState: Bundle?,
+        rootKey: String?
+    ) {
         // Add preferences
         addPreferencesFromResource(R.xml.preferences_account)
 
         // Add listener for preference changes
-        preferenceScreen.sharedPreferences
-            .registerOnSharedPreferenceChangeListener(this)
+        preferenceScreen.sharedPreferences?.registerOnSharedPreferenceChangeListener(
+            this
+        )
 
         // Update preference summaries and behaviours
         updateSummariesAndHandlers()
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences,
-                                           key: String) {
+    override fun onSharedPreferenceChanged(
+        sharedPreferences: SharedPreferences,
+        key: String
+    ) {
         // It's not clear why onSharedPreferenceChanged is called before the
         // fragment is actually added to the activity, but it apparently is;
         // this check is therefore required to prevent a crash
@@ -79,10 +84,13 @@ class AccountPreferencesFragment : PreferenceFragmentCompat(),
      * Updates the summary texts and behaviours for the specified preference.
      */
     private fun updateSummaryAndHandlerForPreference(
-        preference: Preference?) {
+        preference: Preference?
+    ) {
         activity?.let { activity ->
             if (preference?.key == getString(
-                    R.string.preferences_account_sign_out_key)) {
+                    R.string.preferences_account_sign_out_key
+                )
+            ) {
                 preference.summary = getEmail(activity)
                 preference.onPreferenceClickListener =
                     Preference.OnPreferenceClickListener {

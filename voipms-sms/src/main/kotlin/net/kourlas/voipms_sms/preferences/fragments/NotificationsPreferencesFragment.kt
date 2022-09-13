@@ -30,14 +30,17 @@ import net.kourlas.voipms_sms.utils.preferences
 
 class NotificationsPreferencesFragment : PreferenceFragmentCompat(),
     SharedPreferences.OnSharedPreferenceChangeListener {
-    override fun onCreatePreferencesFix(savedInstanceState: Bundle?,
-                                        rootKey: String?) {
+    override fun onCreatePreferencesFix(
+        savedInstanceState: Bundle?,
+        rootKey: String?
+    ) {
         // Add preferences
         addPreferencesFromResource(R.xml.preferences_notifications)
 
         // Add listener for preference changes
-        preferenceScreen.sharedPreferences
-            .registerOnSharedPreferenceChangeListener(this)
+        preferenceScreen.sharedPreferences?.registerOnSharedPreferenceChangeListener(
+            this
+        )
 
         // Update preferences summaries
         updateSummaries()
@@ -59,8 +62,10 @@ class NotificationsPreferencesFragment : PreferenceFragmentCompat(),
         }
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences,
-                                           key: String) {
+    override fun onSharedPreferenceChanged(
+        sharedPreferences: SharedPreferences,
+        key: String
+    ) {
         // It's not clear why onSharedPreferenceChanged is called before the
         // fragment is actually added to the activity, but it apparently is;
         // this check is therefore required to prevent a crash
@@ -85,17 +90,21 @@ class NotificationsPreferencesFragment : PreferenceFragmentCompat(),
                 } else {
                     try {
                         val ringtone = RingtoneManager.getRingtone(
-                            activity, Uri.parse(notificationSound))
+                            activity, Uri.parse(notificationSound)
+                        )
                         if (ringtone != null) {
                             preference.summary = ringtone.getTitle(
-                                activity)
+                                activity
+                            )
                         } else {
                             preference.summary = getString(
-                                R.string.preferences_notifications_sound_unknown)
+                                R.string.preferences_notifications_sound_unknown
+                            )
                         }
                     } catch (ex: SecurityException) {
                         preference.summary = getString(
-                            R.string.preferences_notifications_sound_unknown_perm)
+                            R.string.preferences_notifications_sound_unknown_perm
+                        )
                     }
                 }
             }

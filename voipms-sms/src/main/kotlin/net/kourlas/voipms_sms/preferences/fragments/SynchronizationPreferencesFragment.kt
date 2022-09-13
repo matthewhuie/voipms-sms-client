@@ -23,28 +23,35 @@ import androidx.preference.ListPreference
 import androidx.preference.Preference
 import com.takisoft.preferencex.PreferenceFragmentCompat
 import net.kourlas.voipms_sms.R
-import net.kourlas.voipms_sms.sms.services.SyncIntervalService
+import net.kourlas.voipms_sms.sms.workers.SyncWorker
 import net.kourlas.voipms_sms.utils.preferences
 
 class SynchronizationPreferencesFragment : PreferenceFragmentCompat(),
     SharedPreferences.OnSharedPreferenceChangeListener {
     // Preference change handlers
     private val syncIntervalPreferenceChangeListener =
-        Preference.OnPreferenceChangeListener { _, _ ->
+        Preference.OnPreferenceChangeListener { _, newValue ->
             activity?.let {
-                SyncIntervalService.startService(it)
+                SyncWorker.performFullSynchronization(
+                    it,
+                    customPeriod = (newValue as String).toDouble(),
+                    scheduleOnly = true
+                )
             }
             true
         }
 
-    override fun onCreatePreferencesFix(savedInstanceState: Bundle?,
-                                        rootKey: String?) {
+    override fun onCreatePreferencesFix(
+        savedInstanceState: Bundle?,
+        rootKey: String?
+    ) {
         // Add preferences
         addPreferencesFromResource(R.xml.preferences_synchronization)
 
         // Add listener for preference changes
-        preferenceScreen.sharedPreferences
-            .registerOnSharedPreferenceChangeListener(this)
+        preferenceScreen.sharedPreferences?.registerOnSharedPreferenceChangeListener(
+            this
+        )
 
         // Update preference summaries and handlers
         updateSummariesAndHandlers()
@@ -67,8 +74,10 @@ class SynchronizationPreferencesFragment : PreferenceFragmentCompat(),
         }
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences,
-                                           key: String) {
+    override fun onSharedPreferenceChanged(
+        sharedPreferences: SharedPreferences,
+        key: String
+    ) {
         // It's not clear why onSharedPreferenceChanged is called before the
         // fragment is actually added to the activity, but it apparently is;
         // this check is therefore required to prevent a crash
@@ -93,7 +102,9 @@ class SynchronizationPreferencesFragment : PreferenceFragmentCompat(),
      */
     private fun updateHandlersForPreference(preference: Preference) {
         if (preference.key == getString(
-                R.string.preferences_sync_interval_key)) {
+                R.string.preferences_sync_interval_key
+            )
+        ) {
             preference.onPreferenceChangeListener =
                 syncIntervalPreferenceChangeListener
         }

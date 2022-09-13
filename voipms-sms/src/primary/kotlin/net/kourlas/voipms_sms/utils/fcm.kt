@@ -1,6 +1,6 @@
 /*
  * VoIP.ms SMS
- * Copyright (C) 2017-2020 Michael Kourlas
+ * Copyright (C) 2017-2021 Michael Kourlas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 
 package net.kourlas.voipms_sms.utils
 
-import android.app.Application
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import com.google.android.gms.common.ConnectionResult
@@ -25,7 +24,7 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.google.firebase.messaging.FirebaseMessaging
 import net.kourlas.voipms_sms.R
 import net.kourlas.voipms_sms.notifications.Notifications
-import net.kourlas.voipms_sms.notifications.services.NotificationsRegistrationService
+import net.kourlas.voipms_sms.notifications.workers.NotificationsRegistrationWorker
 import net.kourlas.voipms_sms.preferences.didsConfigured
 import net.kourlas.voipms_sms.preferences.getDids
 import net.kourlas.voipms_sms.preferences.setSetupCompletedForVersion
@@ -37,7 +36,9 @@ fun subscribeToDidTopics(context: Context) {
     // Do not subscribe to DID topics if Google Play Services is unavailable
     if (GoogleApiAvailability.getInstance()
             .isGooglePlayServicesAvailable(
-                context) != ConnectionResult.SUCCESS) {
+                context
+            ) != ConnectionResult.SUCCESS
+    ) {
         return
     }
 
@@ -52,32 +53,40 @@ fun subscribeToDidTopics(context: Context) {
  * using a snackbar on the specified activity if Google Play Services is
  * unavailable.
  */
-fun enablePushNotifications(application: Application,
-                            activityToShowError: FragmentActivity? = null) {
+fun enablePushNotifications(
+    context: Context,
+    activityToShowError: FragmentActivity? = null
+) {
     // Check if Google Play Services is available
     if (GoogleApiAvailability.getInstance()
             .isGooglePlayServicesAvailable(
-                application) != ConnectionResult.SUCCESS) {
+                context
+            ) != ConnectionResult.SUCCESS
+    ) {
         if (activityToShowError != null) {
-            showSnackbar(activityToShowError, R.id.coordinator_layout,
-                         activityToShowError.getString(
-                             R.string.push_notifications_fail_google_play))
+            showSnackbar(
+                activityToShowError, R.id.coordinator_layout,
+                activityToShowError.getString(
+                    R.string.push_notifications_fail_google_play
+                )
+            )
         }
-        setSetupCompletedForVersion(application, 114)
+        setSetupCompletedForVersion(context, 134)
         return
     }
 
     // Check if DIDs are configured and that notifications are enabled,
     // and silently quit if not
-    if (!didsConfigured(application)
-        || !Notifications.getInstance(application).getNotificationsEnabled()) {
-        setSetupCompletedForVersion(application, 114)
+    if (!didsConfigured(context)
+        || !Notifications.getInstance(context).getNotificationsEnabled()
+    ) {
+        setSetupCompletedForVersion(context, 134)
         return
     }
 
     // Subscribe to DID topics
-    subscribeToDidTopics(application)
+    subscribeToDidTopics(context)
 
     // Start push notifications registration service
-    NotificationsRegistrationService.startService(application)
+    NotificationsRegistrationWorker.registerForPushNotifications(context)
 }

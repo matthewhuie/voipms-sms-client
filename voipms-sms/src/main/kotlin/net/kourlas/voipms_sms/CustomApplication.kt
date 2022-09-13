@@ -1,6 +1,6 @@
 /*
  * VoIP.ms SMS
- * Copyright (C) 2017-2020 Michael Kourlas
+ * Copyright (C) 2017-2021 Michael Kourlas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package net.kourlas.voipms_sms
 
 import android.app.Application
 import android.net.ConnectivityManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
+import net.kourlas.voipms_sms.billing.Billing
+import net.kourlas.voipms_sms.database.Database
 import net.kourlas.voipms_sms.network.NetworkManager.Companion.getInstance
 import net.kourlas.voipms_sms.preferences.fragments.AppearancePreferencesFragment
 import net.kourlas.voipms_sms.preferences.getAppTheme
+import net.kourlas.voipms_sms.preferences.getSyncInterval
+import net.kourlas.voipms_sms.preferences.setRawSyncInterval
 import net.kourlas.voipms_sms.sms.ConversationId
-import net.kourlas.voipms_sms.sms.Database.Companion.getInstance
+import net.kourlas.voipms_sms.sms.workers.SyncWorker
 import net.kourlas.voipms_sms.utils.subscribeToDidTopics
-import java.util.*
 
 class CustomApplication : Application() {
     private var conversationsActivitiesVisible = 0
-    private val conversationActivitiesVisible: MutableMap<ConversationId, Int> = HashMap()
+    private val conversationActivitiesVisible: MutableMap<ConversationId, Int> =
+        HashMap()
 
     fun conversationsActivityVisible(): Boolean {
         return conversationsActivitiesVisible > 0
@@ -50,7 +55,8 @@ class CustomApplication : Application() {
     }
 
     fun conversationActivityIncrementCount(
-        conversationId: ConversationId) {
+        conversationId: ConversationId
+    ) {
         var count = conversationActivitiesVisible[conversationId]
         if (count == null) {
             count = 0
@@ -59,7 +65,8 @@ class CustomApplication : Application() {
     }
 
     fun conversationActivityDecrementCount(
-        conversationId: ConversationId) {
+        conversationId: ConversationId
+    ) {
         var count = conversationActivitiesVisible[conversationId]
         if (count == null) {
             count = 0
@@ -70,28 +77,61 @@ class CustomApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        // Create static reference to self.
+        self = this
+
+        // Limit synchronization interval to 15 minutes. Previous versions
+        // supported a shorter interval.
+        if (getSyncInterval(applicationContext) != 0.0
+            && getSyncInterval(applicationContext) < (15.0 / (24 * 60))
+        ) {
+            setRawSyncInterval(applicationContext, "0.01041666666")
+        }
+
         // Update theme
         when (getAppTheme(applicationContext)) {
             AppearancePreferencesFragment.SYSTEM_DEFAULT -> AppCompatDelegate.setDefaultNightMode(
-                AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            )
             AppearancePreferencesFragment.LIGHT -> AppCompatDelegate.setDefaultNightMode(
-                AppCompatDelegate.MODE_NIGHT_NO)
+                AppCompatDelegate.MODE_NIGHT_NO
+            )
             AppearancePreferencesFragment.DARK -> AppCompatDelegate.setDefaultNightMode(
-                AppCompatDelegate.MODE_NIGHT_YES)
+                AppCompatDelegate.MODE_NIGHT_YES
+            )
         }
 
         // Register for network callbacks
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val connectivityManager = getSystemService(
-                CONNECTIVITY_SERVICE) as ConnectivityManager
+                CONNECTIVITY_SERVICE
+            ) as ConnectivityManager
             connectivityManager.registerDefaultNetworkCallback(
-                getInstance())
+                getInstance()
+            )
         }
 
-        // Open database
-        getInstance(applicationContext)
+        // Open the database.
+        Database.getInstance(applicationContext)
 
-        // Subscribe to topics for current DIDs
+        // Subscribe to topics for current DIDs.
         subscribeToDidTopics(applicationContext)
+
+        // Schedule a database synchronization, if required.
+        SyncWorker.performFullSynchronization(
+            applicationContext,
+            scheduleOnly = true
+        )
+
+        // Initialize the billing service.
+        Billing.getInstance(applicationContext)
+    }
+
+    companion object {
+        private lateinit var self: CustomApplication
+
+        fun getApplication(): CustomApplication {
+            return self
+        }
     }
 }

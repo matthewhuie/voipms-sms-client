@@ -1,6 +1,6 @@
 /*
  * VoIP.ms SMS
- * Copyright (C) 2017-2019 Michael Kourlas
+ * Copyright (C) 2017-2021 Michael Kourlas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,14 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.widget.CompoundButton
 import androidx.appcompat.widget.SwitchCompat
+import androidx.lifecycle.lifecycleScope
+import androidx.preference.Preference
 import androidx.preference.SwitchPreference
 import com.takisoft.preferencex.PreferenceFragmentCompat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import net.kourlas.voipms_sms.R
+import net.kourlas.voipms_sms.database.Database
 import net.kourlas.voipms_sms.preferences.*
 import net.kourlas.voipms_sms.utils.*
 
@@ -41,32 +46,41 @@ class DidPreferencesFragment : PreferenceFragmentCompat(),
             override fun onReceive(context: Context?, intent: Intent?) {
                 activity?.let { activity ->
                     // Show error if one occurred
-                    intent?.getStringArrayListExtra(getString(
-                        R.string
-                            .push_notifications_reg_complete_failed_dids))?.let {
-                        if (it.isNotEmpty()) {
-                            // Some DIDs failed registration
-                            showSnackbar(
-                                activity, R.id.coordinator_layout,
-                                getString(
-                                    R.string.push_notifications_fail_register))
-                        }
-                    } ?: run {
+                    intent?.getStringArrayListExtra(
+                        getString(
+                            R.string
+                                .push_notifications_reg_complete_failed_dids
+                        )
+                    )
+                        ?.let {
+                            if (it.isNotEmpty()) {
+                                // Some DIDs failed registration
+                                showSnackbar(
+                                    activity, R.id.coordinator_layout,
+                                    getString(
+                                        R.string.push_notifications_fail_register
+                                    )
+                                )
+                            }
+                        } ?: run {
                         // Unknown error
                         showSnackbar(
                             activity, R.id.coordinator_layout,
-                            getString(R.string.push_notifications_fail_unknown))
+                            getString(R.string.push_notifications_fail_unknown)
+                        )
 
                         // Regardless of whether an error occurred, mark setup
                         // as complete
-                        setSetupCompletedForVersion(activity, 114)
+                        setSetupCompletedForVersion(activity, 134)
                     }
                 }
             }
         }
 
-    override fun onCheckedChanged(buttonView: CompoundButton?,
-                                  isChecked: Boolean) {
+    override fun onCheckedChanged(
+        buttonView: CompoundButton?,
+        isChecked: Boolean
+    ) {
         activity?.let {
             if (!::did.isInitialized) {
                 return
@@ -83,21 +97,30 @@ class DidPreferencesFragment : PreferenceFragmentCompat(),
 
             if (dids.isNotEmpty()) {
                 // Re-register for push notifications when DIDs change
-                enablePushNotifications(it.application,
-                                        activityToShowError = it)
+                enablePushNotifications(
+                    it.applicationContext,
+                    activityToShowError = it
+                )
             }
-            replaceIndexOnNewThread(it)
+            lifecycleScope.launch(Dispatchers.Default) {
+                replaceIndex(it)
+            }
 
             updatePreferences()
         }
     }
 
-    override fun onCreatePreferencesFix(savedInstanceState: Bundle?,
-                                        rootKey: String?) {
+    override fun onCreatePreferencesFix(
+        savedInstanceState: Bundle?,
+        rootKey: String?
+    ) {
         activity?.let {
             // Set DID
-            did = arguments?.getString(getString(
-                R.string.preferences_did_fragment_argument_did)) ?: run {
+            did = arguments?.getString(
+                getString(
+                    R.string.preferences_did_fragment_argument_did
+                )
+            ) ?: run {
                 abortActivity(it, Exception("Missing DID argument"))
                 return
             }
@@ -111,7 +134,8 @@ class DidPreferencesFragment : PreferenceFragmentCompat(),
 
             // Add listener for enabled switch
             val enabledSwitch = it.findViewById<SwitchCompat>(
-                R.id.enabled_switch)
+                R.id.enabled_switch
+            )
             enabledSwitch.setOnCheckedChangeListener(this)
         }
     }
@@ -121,8 +145,11 @@ class DidPreferencesFragment : PreferenceFragmentCompat(),
 
         activity?.let {
             // Set DID
-            did = arguments?.getString(getString(
-                R.string.preferences_did_fragment_argument_did)) ?: run {
+            did = arguments?.getString(
+                getString(
+                    R.string.preferences_did_fragment_argument_did
+                )
+            ) ?: run {
                 abortActivity(it, Exception("Missing DID argument"))
                 return
             }
@@ -130,8 +157,12 @@ class DidPreferencesFragment : PreferenceFragmentCompat(),
             // Register dynamic receivers for this fragment
             it.registerReceiver(
                 pushNotificationsRegistrationCompleteReceiver,
-                IntentFilter(getString(
-                    R.string.push_notifications_reg_complete_action)))
+                IntentFilter(
+                    getString(
+                        R.string.push_notifications_reg_complete_action
+                    )
+                )
+            )
 
             // Update checked status for each preference
             updatePreferences()
@@ -145,7 +176,8 @@ class DidPreferencesFragment : PreferenceFragmentCompat(),
             // Unregister dynamic receivers for this fragment
             safeUnregisterReceiver(
                 it,
-                pushNotificationsRegistrationCompleteReceiver)
+                pushNotificationsRegistrationCompleteReceiver
+            )
         }
     }
 
@@ -158,19 +190,32 @@ class DidPreferencesFragment : PreferenceFragmentCompat(),
         showInConversationsViewPreference.key =
             getString(
                 R.string.preferences_did_show_in_conversations_view_key,
-                did)
+                did
+            )
 
         val retrieveMessagesPreference =
             preferenceScreen.getPreference(1) as SwitchPreference
         retrieveMessagesPreference.key =
             getString(
-                R.string.preferences_did_retrieve_messages_key, did)
+                R.string.preferences_did_retrieve_messages_key, did
+            )
 
         val showNotificationsPreference =
             preferenceScreen.getPreference(2) as SwitchPreference
         showNotificationsPreference.key =
             getString(
-                R.string.preferences_did_show_notifications_key, did)
+                R.string.preferences_did_show_notifications_key, did
+            )
+        showNotificationsPreference.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, _ ->
+                context?.let {
+                    lifecycleScope.launch(Dispatchers.Default) {
+                        Database.getInstance(it).updateShortcuts()
+                        replaceIndex(it)
+                    }
+                }
+                true
+            }
     }
 
     /**
@@ -179,7 +224,8 @@ class DidPreferencesFragment : PreferenceFragmentCompat(),
     private fun updatePreferences() {
         activity?.let {
             val enabledSwitch = it.findViewById<SwitchCompat>(
-                R.id.enabled_switch)
+                R.id.enabled_switch
+            )
             enabledSwitch.isChecked = did in getDids(it)
 
             val showInConversationsViewPreference =
@@ -201,7 +247,8 @@ class DidPreferencesFragment : PreferenceFragmentCompat(),
             showNotificationsPreference.isEnabled =
                 enabledSwitch.isChecked
             showNotificationsPreference.isChecked = getDidShowNotifications(
-                it, did)
+                it, did
+            )
         }
     }
 }

@@ -1,6 +1,6 @@
 /*
  * VoIP.ms SMS
- * Copyright (C) 2015-2017 Michael Kourlas
+ * Copyright (C) 2015-2021 Michael Kourlas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 package net.kourlas.voipms_sms.sms
 
 import com.squareup.moshi.JsonClass
+import net.kourlas.voipms_sms.database.entities.Draft
+import net.kourlas.voipms_sms.database.entities.Sms
 import net.kourlas.voipms_sms.utils.toBoolean
 import net.kourlas.voipms_sms.utils.validatePhoneNumber
 import java.util.*
@@ -26,39 +28,99 @@ import java.util.*
  * Represents a single SMS message.
  *
  * @param databaseId The database ID of the message.
- * @param voipId The ID assigned to the message by VoIP.ms. This value may be null if no
- * ID has yet been assigned to the message because the message has not yet
- * been sent.
- * @param date The UNIX timestamp of the message.
- * @param isIncoming Whether or not the message is incoming (1 for
- * incoming, 0 for outgoing).
+ * @param voipId The ID assigned to the message by VoIP.ms. This value may be
+ * null if no ID has yet been assigned to the message because the message has
+ * not yet been sent.
+ * @param date The timestamp of the message.
+ * @param isIncoming Whether or not the message is incoming.
  * @param did The DID associated with the message.
  * @param contact The contact associated with the message.
  * @param text The text of the message.
- * @param isUnread Whether or not the message is unread (1 for true, 0 for
- * false).
- * @param isDelivered Whether or not the message has been delivered (1 for
- * true, 0 for false).
+ * @param isUnread Whether or not the message is unread.
+ * @param isDelivered Whether or not the message has been delivered.
  * @param isDeliveryInProgress Whether or not the message is currently in
- * the process of being delivered (1 for true, 0 for false).
+ * the process of being delivered.
  * @param isDraft Whether or not the message is a draft.
  */
 @JsonClass(generateAdapter = true)
-class Message(val databaseId: Long, val voipId: Long?, date: Long,
-              isIncoming: Long, val did: String, val contact: String,
-              var text: String, isUnread: Long, isDelivered: Long,
-              isDeliveryInProgress: Long, val isDraft: Boolean = false) :
+class Message(
+    val databaseId: Long, val voipId: Long?, val date: Date,
+    val isIncoming: Boolean, val did: String, val contact: String,
+    var text: String, val isUnread: Boolean, val isDelivered: Boolean,
+    val isDeliveryInProgress: Boolean, val isDraft: Boolean = false
+) :
     Comparable<Message> {
-    // Used to construct a draft message
-    constructor(did: String, contact: String, text: String) :
-        this(0, 0, Date().time / 1000, 0, did, contact, text, 0, 0, 0, true)
+
+    /**
+     * This constructor is used when initializing a message using data from VoIP.ms.
+     *
+     * @param databaseId The database ID of the message.
+     * @param voipId The ID assigned to the message by VoIP.ms. This value may be
+     * null if no ID has yet been assigned to the message because the message has
+     * not yet been sent.
+     * @param date The UNIX timestamp of the message.
+     * @param isIncoming Whether or not the message is incoming (1 for
+     * incoming, 0 for outgoing).
+     * @param did The DID associated with the message.
+     * @param contact The contact associated with the message.
+     * @param text The text of the message.
+     * @param isUnread Whether or not the message is unread (1 for true, 0 for
+     * false).
+     * @param isDelivered Whether or not the message has been delivered (1 for
+     * true, 0 for false).
+     * @param isDeliveryInProgress Whether or not the message is currently in
+     * the process of being delivered (1 for true, 0 for false).
+     * @param isDraft Whether or not the message is a draft.
+     */
+    constructor(
+        databaseId: Long, voipId: Long?, date: Long,
+        isIncoming: Long, did: String, contact: String,
+        text: String, isUnread: Long, isDelivered: Long,
+        isDeliveryInProgress: Long, isDraft: Boolean = false
+    ) : this(
+        databaseId, voipId, Date(date * 1000), toBoolean(isIncoming), did,
+        contact, text, toBoolean(isUnread), toBoolean(isDelivered),
+        toBoolean(isDeliveryInProgress), isDraft
+    )
+
+    /**
+     * This constructor is used when initializing a message from a regular
+     * message in the database.
+     */
+    constructor(sms: Sms) :
+        this(
+            sms.databaseId, sms.voipId, sms.date, sms.incoming, sms.did,
+            sms.contact, sms.text, sms.unread, sms.delivered,
+            sms.deliveryInProgress
+        )
+
+    /**
+     * This constructor is used when initializing a message from a regular
+     * message in the database, but the database ID is provided separately.
+     */
+    constructor(sms: Sms, databaseId: Long) :
+        this(
+            databaseId, sms.voipId, sms.date, sms.incoming, sms.did,
+            sms.contact, sms.text, sms.unread, sms.delivered,
+            sms.deliveryInProgress
+        )
+
+    /**
+     * This constructor is used when initializing a message from a draft
+     * message in the database.
+     */
+    constructor(draft: Draft) :
+        this(
+            0, 0, Date().time / 1000, 0, draft.did, draft.contact, draft.text,
+            0, 0, 0, true
+        )
 
     init {
         validatePhoneNumber(did)
         validatePhoneNumber(contact)
 
         // Remove training newline if one exists
-        if (toBoolean(isIncoming) && this.text.endsWith("\n")) {
+        if (isIncoming && this.text.endsWith("\n")) {
             this.text = text.substring(0, text.length - 1)
         }
     }
@@ -70,36 +132,10 @@ class Message(val databaseId: Long, val voipId: Long?, date: Long,
         get() = ConversationId(did, contact)
 
     /**
-     * The date of the message.
-     */
-    var date: Date = Date(date * 1000)
-
-    /**
-     * Whether or not the message is incoming (a message addressed to the DID).
-     */
-    val isIncoming: Boolean = toBoolean(isIncoming)
-
-    /**
      * Whether or not the message is outgoing (a message coming from the DID).
      */
     val isOutgoing: Boolean
         get() = !isIncoming
-
-    /**
-     * Whether or not the message is unread.
-     */
-    var isUnread: Boolean = toBoolean(isUnread)
-
-    /**
-     * Whether or not the message has been delivered.
-     */
-    var isDelivered: Boolean = toBoolean(isDelivered)
-
-    /**
-     * Whether or not the message is currently in the process of being
-     * delivered.
-     */
-    var isDeliveryInProgress: Boolean = toBoolean(isDeliveryInProgress)
 
     /**
      * Gets the URL that can be used to access this message.
@@ -272,7 +308,8 @@ class Message(val databaseId: Long, val voipId: Long?, date: Long,
          * specified message.
          */
         fun getMessageUrl(
-            databaseId: Long): String = "voipmssms://message?id=$databaseId"
+            databaseId: Long
+        ): String = "voipmssms://message?id=$databaseId"
 
         /**
          * Gets a URL used for Firebase indexing representing a single
@@ -281,7 +318,9 @@ class Message(val databaseId: Long, val voipId: Long?, date: Long,
          * @param conversationId The ID of the specified conversation.
          */
         fun getConversationUrl(
-            conversationId: ConversationId): String = "voipmssms://conversation?did=${conversationId.did}" +
-                                                      "&contact=${conversationId.contact}"
+            conversationId: ConversationId
+        ): String =
+            "voipmssms://conversation?did=${conversationId.did}" +
+                "&contact=${conversationId.contact}"
     }
 }
